@@ -1,28 +1,28 @@
 /**
- * Clase que representa un oscilador individual de Kuramoto.
+ * Clase que representa un oscilador individual de Kuramoto asociado a un Círculo del Infierno.
  */
 export class Oscillator {
   /**
    * @param {Object} config
    * @param {number} config.id - Identificador único (0 a 7)
+   * @param {string} config.circle - Nombre del Círculo del Infierno
    * @param {number} config.initialTheta - Fase inicial en radianes
    * @param {number} config.omega - Frecuencia natural inicial (rad/s)
    * @param {string} config.color - Color hexadecimal para identificación
-   * @param {string} config.name - Nombre o código de nota (ej: 'C4')
-   * @param {number} config.frequency - Frecuencia en Hz para el sonido
+   * @param {string} config.audioProfile - Nombre del archivo de audio o perfil sonoro
    */
-  constructor({ id, initialTheta, omega, color, name, frequency }) {
+  constructor({ id, circle, initialTheta, omega, color, audioProfile }) {
     this.id = id;
+    this.circle = circle;
     this.theta = initialTheta;
     this.prevTheta = initialTheta;
     this.omega = omega;
     this.color = color;
-    this.name = name;
-    this.frequency = frequency;
+    this.audioProfile = audioProfile;
     this.active = true;
     this.selected = false;
+    this.behavior = null; // Asignado posteriormente por el gestor de comportamientos
 
-    // Almacenamos la fase normalizada en [0, 2PI)
     this.normalizedTheta = this.theta % (Math.PI * 2);
     if (this.normalizedTheta < 0) this.normalizedTheta += Math.PI * 2;
   }
@@ -38,14 +38,13 @@ export class Oscillator {
     this.prevTheta = this.theta;
     this.theta += dThetaDt * dt;
 
-    // Normalizar fase a [0, 2PI)
     const TWO_PI = Math.PI * 2;
     this.normalizedTheta = this.theta % TWO_PI;
     if (this.normalizedTheta < 0) this.normalizedTheta += TWO_PI;
   }
 
   /**
-   * Detecta si el oscilador cruzó el inicio de un nuevo ciclo (cresta de sin(theta) ~ 1 o wrap 2PI).
+   * Detecta si el oscilador cruzó el pico (cresta superior Math.PI / 2).
    * @returns {boolean} true si se disparó la cresta en este cuadro
    */
   checkPeakTrigger() {
@@ -55,8 +54,6 @@ export class Oscillator {
     const prevMod = ((this.prevTheta % TWO_PI) + TWO_PI) % TWO_PI;
     const currMod = this.normalizedTheta;
 
-    // Disparo cuando cruza la cresta superior Math.PI / 2 (o el punto 0)
-    // Usaremos el paso por Math.PI / 2 (máximo de sin(theta))
     const PEAK = Math.PI / 2;
     return prevMod < PEAK && currMod >= PEAK;
   }

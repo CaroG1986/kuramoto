@@ -45,7 +45,6 @@ export class Trails {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-    // Material de luz neón aditivo
     const material = new THREE.PointsMaterial({
       size: 0.22,
       vertexColors: true,
@@ -63,7 +62,7 @@ export class Trails {
 
   /**
    * Actualiza las estelas de luz neón en cada cuadro.
-   * @param {number} orderR - Parámetro de orden Kuramoto (0 a 1)
+   * @param {number} orderR 
    */
   update(orderR) {
     const posAttr = this.particleSystem.geometry.attributes.position;
@@ -73,7 +72,7 @@ export class Trails {
       const char = this.characters[c];
       const charHist = this.history[c];
 
-      if (char.oscillator.active) {
+      if (char && char.oscillator && char.oscillator.active && char.limbs.head) {
         const headPos = new THREE.Vector3();
         char.limbs.head.getWorldPosition(headPos);
 
@@ -99,7 +98,6 @@ export class Trails {
       }
     }
 
-    // Intensificar estelas a medida que R aumenta
     this.particleSystem.material.opacity = 0.6 + orderR * 0.35;
     posAttr.needsUpdate = true;
   }

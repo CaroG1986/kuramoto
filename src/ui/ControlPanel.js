@@ -1,13 +1,13 @@
 /**
- * Panel de Control de Interfaz HTML/CSS para la experiencia performativa de Kuramoto.
+ * Panel de Control de Interfaz HTML/CSS para la experiencia performativa del Patio Infernal Kuramoto.
  */
 export class ControlPanel {
   /**
    * @param {Object} config
    * @param {import('../core/KuramotoSystem.js').KuramotoSystem} config.kuramoto
    * @param {import('../audio/AudioManager.js').AudioManager} config.audio
-   * @param {Function} config.onStartExperience - Callback cuando se presiona START EXPERIENCE
-   * @param {Function} config.onResetCamera - Callback para resetear vista de cámara
+   * @param {Function} config.onStartExperience 
+   * @param {Function} config.onResetCamera 
    */
   constructor({ kuramoto, audio, onStartExperience, onResetCamera }) {
     this.kuramoto = kuramoto;
@@ -21,19 +21,16 @@ export class ControlPanel {
     this._bindEvents();
   }
 
-  /**
-   * Construye dinámicamente los elementos DOM de la interfaz
-   */
   _createDOMStructure() {
-    // 1. Pantalla Inicial Overlay (Autoplay Web Audio Unlock)
+    // 1. Pantalla Inicial Overlay
     this.startOverlay = document.createElement('div');
     this.startOverlay.className = 'start-overlay';
     this.startOverlay.innerHTML = `
       <div class="start-card">
-        <div class="start-badge">EXP AUDIOVISUAL PERFORMÁTICA</div>
-        <h1>KURAMOTO PLAYGROUND</h1>
-        <p>Sincronización emergente en vivo mediante el Modelo de Kuramoto sobre 8 osciladores y 4 sube y bajas.</p>
-        <button id="btn-start-exp" class="btn-primary">START EXPERIENCE</button>
+        <div class="start-badge">PATIO DE JUEGOS INFERNAL · KURAMOTO</div>
+        <h1>LOS 8 CÍRCULOS DEL INFIERNO</h1>
+        <p>Experiencia audiovisual performativa basada en el modelo dinámico de Kuramoto. Ocho personajes y sus osciladores emergen en sincronía sobre el patio.</p>
+        <button id="btn-start-exp" class="btn-primary">INGRESAR AL PATIO</button>
       </div>
     `;
     document.body.appendChild(this.startOverlay);
@@ -43,14 +40,14 @@ export class ControlPanel {
     this.panelContainer.className = 'control-panel';
     this.panelContainer.innerHTML = `
       <div class="panel-header">
-        <h2>KURAMOTO LAB</h2>
+        <h2>KURAMOTO INFERNAL</h2>
         <span class="panel-subtitle">SISTEMA AUDIOVISUAL</span>
       </div>
 
       <!-- MEDIDOR DE SINCRONIZACIÓN R -->
       <div class="sync-meter-card">
         <div class="sync-header">
-          <span class="sync-label">SYNC (Parámetro de Orden R)</span>
+          <span class="sync-label">PARÁMETRO DE ORDEN R</span>
           <span id="sync-value" class="sync-number">0.00</span>
         </div>
         <div class="sync-bar-bg">
@@ -63,9 +60,9 @@ export class ControlPanel {
       <div class="control-group">
         <label>
           <span>Acoplamiento <strong>K</strong></span>
-          <span id="val-k" class="val-badge">1.0</span>
+          <span id="val-k" class="val-badge">1.2</span>
         </label>
-        <input type="range" id="slider-k" min="0" max="10" step="0.1" value="1.0" />
+        <input type="range" id="slider-k" min="0" max="10" step="0.1" value="1.2" />
       </div>
 
       <div class="control-group">
@@ -83,9 +80,9 @@ export class ControlPanel {
         <button id="btn-preset-sync" class="btn-chip">Sincro (K=5.0)</button>
       </div>
 
-      <!-- LISTA DE LOS 8 OSCILADORES -->
+      <!-- LISTA DE LOS 8 OSCILADORES DE LOS CÍRCULOS -->
       <div class="osc-list-section">
-        <h3>OSCILADORES (8)</h3>
+        <h3>LOS 8 CÍRCULOS DEL INFIERNO</h3>
         <div id="osc-items-container" class="osc-items-container"></div>
       </div>
 
@@ -93,14 +90,14 @@ export class ControlPanel {
       <div id="inspector-card" class="inspector-card hidden">
         <div class="inspector-header">
           <span id="insp-color-dot" class="color-dot"></span>
-          <strong id="insp-title">Oscilador #1</strong>
+          <strong id="insp-title">Limbo</strong>
           <button id="btn-close-insp" class="btn-close">&times;</button>
         </div>
         <div class="inspector-body">
-          <div class="insp-row"><span>Fase θ:</span> <strong id="insp-theta">0.00 rad</strong></div>
-          <div class="insp-row"><span>Nota:</span> <strong id="insp-note">C4</strong></div>
+          <div class="insp-row"><span>Fase θᵢ:</span> <strong id="insp-theta">0.00 rad</strong></div>
+          <div class="insp-row"><span>Perfil Audio:</span> <strong id="insp-audio">limbo.wav</strong></div>
           <div class="insp-row">
-            <span>Frecuencia ω:</span>
+            <span>Frecuencia Natural ωᵢ:</span>
             <input type="range" id="insp-slider-omega" min="0.2" max="5.0" step="0.1" value="1.0" />
             <span id="insp-val-omega" class="val-badge">1.0</span>
           </div>
@@ -119,9 +116,6 @@ export class ControlPanel {
     this._renderOscillatorList();
   }
 
-  /**
-   * Genera los elementos individuales para cada uno de los 8 osciladores
-   */
   _renderOscillatorList() {
     const container = this.panelContainer.querySelector('#osc-items-container');
     container.innerHTML = '';
@@ -134,7 +128,7 @@ export class ControlPanel {
       item.innerHTML = `
         <div class="osc-item-left">
           <span class="color-dot" style="background-color: ${osc.color}"></span>
-          <span class="osc-name">#0${osc.id + 1} (${osc.name})</span>
+          <span class="osc-name">#0${osc.id + 1} ${osc.circle}</span>
         </div>
         <div class="osc-item-right">
           <label class="toggle-switch">
@@ -148,11 +142,7 @@ export class ControlPanel {
     });
   }
 
-  /**
-   * Vincula los event listeners a la interfaz
-   */
   _bindEvents() {
-    // 1. Botón Start Experience
     const btnStart = this.startOverlay.querySelector('#btn-start-exp');
     btnStart.addEventListener('click', () => {
       this.startOverlay.classList.add('fade-out');
@@ -160,7 +150,6 @@ export class ControlPanel {
       if (this.onStartExperience) this.onStartExperience();
     });
 
-    // 2. Slider K
     const sliderK = this.panelContainer.querySelector('#slider-k');
     const valK = this.panelContainer.querySelector('#val-k');
     sliderK.addEventListener('input', (e) => {
@@ -169,7 +158,6 @@ export class ControlPanel {
       valK.textContent = val.toFixed(1);
     });
 
-    // 3. Slider Speed
     const sliderSpeed = this.panelContainer.querySelector('#slider-speed');
     const valSpeed = this.panelContainer.querySelector('#val-speed');
     sliderSpeed.addEventListener('input', (e) => {
@@ -178,7 +166,6 @@ export class ControlPanel {
       valSpeed.textContent = `${val.toFixed(1)}x`;
     });
 
-    // 4. Presets
     this.panelContainer.querySelector('#btn-preset-caos').addEventListener('click', () => {
       sliderK.value = 0;
       sliderK.dispatchEvent(new Event('input'));
@@ -192,7 +179,6 @@ export class ControlPanel {
       sliderK.dispatchEvent(new Event('input'));
     });
 
-    // 5. Checkboxes de Osciladores Activos/Inactivos
     this.panelContainer.addEventListener('change', (e) => {
       if (e.target.classList.contains('chk-osc-active')) {
         const id = parseInt(e.target.dataset.id, 10);
@@ -203,7 +189,6 @@ export class ControlPanel {
       }
     });
 
-    // 6. Botones de Acción
     this.panelContainer.querySelector('#btn-random-phases').addEventListener('click', () => {
       this.kuramoto.randomizePhases();
     });
@@ -218,12 +203,10 @@ export class ControlPanel {
       btnAudio.textContent = `Audio: ${isMuted ? 'OFF' : 'ON'}`;
     });
 
-    // 7. Cierre de Inspector
     this.panelContainer.querySelector('#btn-close-insp').addEventListener('click', () => {
       this.setSelectedOscillator(null);
     });
 
-    // 8. Slider de Omega en Inspector
     const sliderOmega = this.panelContainer.querySelector('#insp-slider-omega');
     const valOmega = this.panelContainer.querySelector('#insp-val-omega');
     sliderOmega.addEventListener('input', (e) => {
@@ -235,10 +218,6 @@ export class ControlPanel {
     });
   }
 
-  /**
-   * Actualiza los datos del inspector cuando un oscilador es seleccionado en 3D
-   * @param {import('../core/Oscillator.js').Oscillator | null} osc
-   */
   setSelectedOscillator(osc) {
     this.selectedOscillator = osc;
     const card = this.panelContainer.querySelector('#inspector-card');
@@ -250,8 +229,8 @@ export class ControlPanel {
 
     card.classList.remove('hidden');
     card.querySelector('#insp-color-dot').style.backgroundColor = osc.color;
-    card.querySelector('#insp-title').textContent = `Oscilador #0${osc.id + 1}`;
-    card.querySelector('#insp-note').textContent = osc.name;
+    card.querySelector('#insp-title').textContent = `#0${osc.id + 1} ${osc.circle}`;
+    card.querySelector('#insp-audio').textContent = osc.audioProfile;
 
     const sliderOmega = card.querySelector('#insp-slider-omega');
     const valOmega = card.querySelector('#insp-val-omega');
@@ -259,13 +238,9 @@ export class ControlPanel {
     valOmega.textContent = osc.omega.toFixed(1);
   }
 
-  /**
-   * Actualiza los elementos dinámicos del panel en cada cuadro
-   */
   update() {
     const R = this.kuramoto.orderParameterR;
 
-    // 1. Actualizar barra y número R
     const syncNumber = this.panelContainer.querySelector('#sync-value');
     const syncFill = this.panelContainer.querySelector('#sync-bar-fill');
     const syncBadge = this.panelContainer.querySelector('#sync-state-badge');
@@ -273,7 +248,6 @@ export class ControlPanel {
     syncNumber.textContent = R.toFixed(2);
     syncFill.style.width = `${Math.min(100, R * 100)}%`;
 
-    // 2. Estado emergente
     if (R < 0.35) {
       syncBadge.textContent = 'ESTADO 1 — DESORDEN';
       syncBadge.className = 'sync-state-badge state-disorder';
@@ -285,7 +259,6 @@ export class ControlPanel {
       syncBadge.className = 'sync-state-badge state-sync';
     }
 
-    // 3. Actualizar fase en inspector si está abierto
     if (this.selectedOscillator) {
       const inspTheta = this.panelContainer.querySelector('#insp-theta');
       if (inspTheta) {

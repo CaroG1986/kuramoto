@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { KuramotoSystem } from './core/KuramotoSystem.js';
 import { AudioManager } from './audio/AudioManager.js';
-import { Playground } from './Scene/Playground.js';
+import { Playground } from './scene/Playground.js';
 import { InteractionManager } from './interaction/InteractionManager.js';
 import { ControlPanel } from './ui/ControlPanel.js';
 import './styles.css';
