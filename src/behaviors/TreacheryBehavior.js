@@ -6,8 +6,8 @@ import * as THREE from 'three';
  */
 export class TreacheryBehavior {
   /**
-   * @param {import('../scene/Character.js').Character} character 
-   * @param {import('../scene/Wheel.js').Wheel} wheel 
+   * @param {import('../Scene/Character.js').Character} character 
+   * @param {import('../Scene/Wheel.js').Wheel} wheel 
    */
   constructor(character, wheel) {
     this.character = character;

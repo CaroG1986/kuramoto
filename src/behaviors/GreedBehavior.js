@@ -6,8 +6,8 @@ import * as THREE from 'three';
  */
 export class GreedBehavior {
   /**
-   * @param {import('../scene/Character.js').Character} character 
-   * @param {import('../scene/Slide.js').Slide} slide 
+   * @param {import('../Scene/Character.js').Character} character 
+   * @param {import('../Scene/Slide.js').Slide} slide 
    */
   constructor(character, slide) {
     this.character = character;

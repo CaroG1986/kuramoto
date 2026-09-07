@@ -7,8 +7,8 @@ import * as THREE from 'three';
  */
 export class SlothBehavior {
   /**
-   * @param {import('../scene/Character.js').Character} character 
-   * @param {import('../scene/Swing.js').Swing} swing 
+   * @param {import('../Scene/Character.js').Character} character 
+   * @param {import('../Scene/Swing.js').Swing} swing 
    */
   constructor(character, swing) {
     this.character = character;

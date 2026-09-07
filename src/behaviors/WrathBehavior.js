@@ -6,8 +6,8 @@ import * as THREE from 'three';
  */
 export class WrathBehavior {
   /**
-   * @param {import('../scene/Character.js').Character} character 
-   * @param {import('../scene/Seesaw.js').Seesaw} seesaw 
+   * @param {import('../Scene/Character.js').Character} character 
+   * @param {import('../Scene/Seesaw.js').Seesaw} seesaw 
    */
   constructor(character, seesaw) {
     this.character = character;

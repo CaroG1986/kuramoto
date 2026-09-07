@@ -1,8 +1,8 @@
 /**
  * Gestor de Audio Audiovisual y Performativo basado en Web Audio API.
- * Carga archivos de audio personalizados desde public/audio/ para cada Círculo del Infierno:
- * - limbo.wav, lust.wav, gluttony.wav, greed.wav, wrath.wav, sloth.wav, violence.wav, treachery.wav
- * Posee sintetizadores Web Audio API como fallback si los archivos .wav no están presentes.
+ * Carga archivos de audio personalizados desde public/audio/ para los 8 Círculos del Infierno:
+ * - limbo.wav, lujuria.wav, gula.wav, avaricia.wav, ira.wav, pereza.wav, violencia.wav, traicion.wav
+ * (Soporta también nombres alternativos en inglés como fallback si están en disco).
  */
 export class AudioManager {
   constructor() {
@@ -13,22 +13,26 @@ export class AudioManager {
     this.isMuted = false;
     this.initialized = false;
 
-    // Buffer de muestras cargadas por ID de oscilador
+    // Buffer de muestras cargadas por ID de oscilador (0 a 7)
     this.audioBuffers = {};
-    this.customFiles = [
-      'limbo.wav',
-      'lust.wav',
-      'gluttony.wav',
-      'greed.wav',
-      'wrath.wav',
-      'sloth.wav',
-      'violence.wav',
-      'treachery.wav'
+
+    // Mapeo de archivos primarios y secundarios en public/audio/
+    this.soundFileMap = [
+      { id: 0, name: 'limbo', files: ['limbo.wav'] },
+      { id: 1, name: 'lujuria', files: ['lujuria.wav', 'lust.wav'] },
+      { id: 2, name: 'gula', files: ['gula.wav', 'gluttony.wav'] },
+      { id: 3, name: 'avaricia', files: ['avaricia.wav', 'greed.wav'] },
+      { id: 4, name: 'ira', files: ['ira.wav', 'wrath.wav'] },
+      { id: 5, name: 'pereza', files: ['pereza.wav', 'sloth.wav'] },
+      { id: 6, name: 'violencia', files: ['violencia.wav', 'violence.wav'] },
+      { id: 7, name: 'traicion', files: ['traicion.wav', 'treachery.wav'] }
     ];
+
+    this.lastTriggerTimes = {};
   }
 
   /**
-   * Inicializa el AudioContext, la cadena de efectos y carga los archivos .wav personalizados.
+   * Inicializa el AudioContext, la cadena de efectos y carga los archivos .wav de public/audio/
    */
   async init() {
     if (this.initialized) return;
@@ -40,13 +44,13 @@ export class AudioManager {
       await this.audioCtx.resume();
     }
 
-    // Compresor de dinámica maestro
+    // Compresor maestro
     this.compressor = this.audioCtx.createDynamicsCompressor();
     this.compressor.threshold.setValueAtTime(-12, this.audioCtx.currentTime);
     this.compressor.knee.setValueAtTime(6, this.audioCtx.currentTime);
     this.compressor.ratio.setValueAtTime(5, this.audioCtx.currentTime);
 
-    // Filtro maestro reactivo a R
+    // Filtro maestro
     this.masterFilter = this.audioCtx.createBiquadFilter();
     this.masterFilter.type = 'lowpass';
     this.masterFilter.frequency.setValueAtTime(3200, this.audioCtx.currentTime);
@@ -59,8 +63,8 @@ export class AudioManager {
     this.compressor.connect(this.masterGain);
     this.masterGain.connect(this.audioCtx.destination);
 
-    // Intentar cargar archivos .wav desde public/audio/
-    this._loadCustomAudioFiles();
+    // Cargar archivos de audio
+    await this._loadCustomAudioFiles();
 
     this.initialized = true;
   }
@@ -69,45 +73,50 @@ export class AudioManager {
    * Intenta cargar los 8 archivos de audio desde public/audio/
    */
   async _loadCustomAudioFiles() {
-    for (let i = 0; i < 8; i++) {
-      const fileName = this.customFiles[i];
-      const filePath = `/audio/${fileName}`;
-
-      try {
-        const res = await fetch(filePath);
-        if (res.ok) {
-          const arrayBuffer = await res.arrayBuffer();
-          const decoded = await this.audioCtx.decodeAudioData(arrayBuffer);
-          this.audioBuffers[i] = decoded;
-          console.log(`[AudioManager] Cargado archivo de audio personalizado: ${fileName}`);
+    for (const item of this.soundFileMap) {
+      let loaded = false;
+      for (const fileName of item.files) {
+        const filePath = `/audio/${fileName}`;
+        try {
+          const res = await fetch(filePath);
+          if (res.ok) {
+            const arrayBuffer = await res.arrayBuffer();
+            const decoded = await this.audioCtx.decodeAudioData(arrayBuffer);
+            this.audioBuffers[item.id] = decoded;
+            console.log(`[AudioManager] Cargado correctamente: ${fileName} para ${item.name}`);
+            loaded = true;
+            break; // Archivo encontrado
+          }
+        } catch (err) {
+          // Continuar al siguiente posible nombre
         }
-      } catch (err) {
-        // Si el archivo no existe aún en public/audio/, se usará el sintetizador de respaldo
       }
     }
   }
 
   /**
-   * Dispara el evento de audio asociado al oscilador
-   * @param {Object} osc 
-   * @param {number} orderR 
+   * Dispara el audio del personaje ante eventos específicos de comportamiento
+   * @param {number} oscId 
+   * @param {string} eventName 
    */
-  triggerNote(osc, orderR = 0) {
-    if (!this.initialized || this.isMuted || !osc.active) return;
+  triggerCharacterEvent(oscId, eventName = 'EVENT') {
+    if (!this.initialized || this.isMuted) return;
     if (this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
     }
 
-    const oscId = osc.id % 8;
     const now = this.audioCtx.currentTime;
+    const lastTime = this.lastTriggerTimes[oscId] || 0;
+    if (now - lastTime < 0.25) return; // Evitar traslapes excesivos
+    this.lastTriggerTimes[oscId] = now;
 
-    // 1. Si existe archivo .wav cargado en el buffer, reproducirlo
+    // Reproducir si existe muestra en buffer
     if (this.audioBuffers[oscId]) {
       const source = this.audioCtx.createBufferSource();
       source.buffer = this.audioBuffers[oscId];
-      
+
       const gain = this.audioCtx.createGain();
-      gain.gain.setValueAtTime(0.6, now);
+      gain.gain.setValueAtTime(0.7, now);
 
       source.connect(gain);
       gain.connect(this.masterFilter);
@@ -115,12 +124,22 @@ export class AudioManager {
       return;
     }
 
-    // 2. De lo contrario, usar sintetizador de respaldo según el Círculo del Infierno
-    this._playSynthFallback(oscId, osc.normalizedTheta, now, orderR);
+    // Sintetizador de respaldo si no hay archivo en disco
+    this._playSynthFallback(oscId, 0.5, now, 0.5);
   }
 
   /**
-   * Sintetizador de respaldo para cada Círculo del Infierno
+   * Dispara audio por evento de cresta de oscilador
+   * @param {Object} osc 
+   * @param {number} orderR 
+   */
+  triggerNote(osc, orderR = 0) {
+    if (!this.initialized || this.isMuted || !osc.active) return;
+    this.triggerCharacterEvent(osc.id, 'PEAK');
+  }
+
+  /**
+   * Sintetizador de respaldo cuando no se ha colocado archivo .wav en public/audio/
    */
   _playSynthFallback(oscId, normalizedTheta, now, R) {
     const osc = this.audioCtx.createOscillator();
@@ -133,20 +152,16 @@ export class AudioManager {
     osc.frequency.setValueAtTime(freq, now);
 
     gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.25, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
 
     osc.connect(gain);
     gain.connect(this.masterFilter);
 
     osc.start(now);
-    osc.stop(now + 0.42);
+    osc.stop(now + 0.4);
   }
 
-  /**
-   * Actualiza el filtro del sistema de audio según el valor de R
-   * @param {number} orderR 
-   */
   updateSystemAudioState(orderR) {
     if (!this.initialized) return;
     const now = this.audioCtx.currentTime;

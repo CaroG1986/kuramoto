@@ -6,8 +6,8 @@ import * as THREE from 'three';
  */
 export class LustBehavior {
   /**
-   * @param {import('../scene/Character.js').Character} character 
-   * @param {import('../scene/Character.js').Character[]} allCharacters 
+   * @param {import('../Scene/Character.js').Character} character 
+   * @param {import('../Scene/Character.js').Character[]} allCharacters 
    */
   constructor(character, allCharacters) {
     this.character = character;
