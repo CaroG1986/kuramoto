@@ -21,7 +21,7 @@ export class AudioManager {
       { id: 0, name: 'limbo', files: ['limbo.wav'] },
       { id: 1, name: 'lujuria', files: ['lujuria.wav', 'lust.wav'] },
       { id: 2, name: 'gula', files: ['gula.wav', 'gluttony.wav'] },
-      { id: 3, name: 'avaricia', files: ['avaricia.wav', 'greed.wav'] },
+      { id: 3, name: 'avaricia', files: ['avaricia.mp3', 'greed.wav'] },
       { id: 4, name: 'ira', files: ['ira.wav', 'wrath.wav'] },
       { id: 5, name: 'pereza', files: ['pereza.wav', 'sloth.wav'] },
       { id: 6, name: 'violencia', files: ['violencia.wav', 'violence.wav'] },
