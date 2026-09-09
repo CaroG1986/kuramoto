@@ -1,185 +1,244 @@
-/**
- * Gestor de Audio Audiovisual y Performativo basado en Web Audio API.
- * Carga archivos de audio personalizados desde public/audio/ para los 8 Círculos del Infierno:
- * - limbo.wav, lujuria.wav, gula.wav, avaricia.wav, ira.wav, pereza.wav, violencia.wav, traicion.wav
- * (Soporta también nombres alternativos en inglés como fallback si están en disco).
- */
 export class AudioManager {
   constructor() {
     this.audioCtx = null;
-    this.masterGain = null;
-    this.compressor = null;
-    this.masterFilter = null;
-    this.isMuted = false;
-    this.initialized = false;
-
-    // Buffer de muestras cargadas por ID de oscilador (0 a 7)
     this.audioBuffers = {};
+    this.activeSources = {};
+    this.masterGain = null;
 
-    // Mapeo de archivos primarios y secundarios en public/audio/
-    this.soundFileMap = [
-      { id: 0, name: 'limbo', files: ['limbo.wav'] },
-      { id: 1, name: 'lujuria', files: ['lujuria.wav', 'lust.wav'] },
-      { id: 2, name: 'gula', files: ['gula.wav', 'gluttony.wav'] },
-      { id: 3, name: 'avaricia', files: ['avaricia.mp3', 'greed.wav'] },
-      { id: 4, name: 'ira', files: ['ira.wav', 'wrath.wav'] },
-      { id: 5, name: 'pereza', files: ['pereza.wav', 'sloth.wav'] },
-      { id: 6, name: 'violencia', files: ['violencia.wav', 'violence.wav'] },
-      { id: 7, name: 'traicion', files: ['traicion.wav', 'treachery.wav'] }
-    ];
-
-    this.lastTriggerTimes = {};
+    // Los nombres de los archivos que tienes en public/audio
+    this.audioFiles = {
+      limbo: "limbo.wav",
+      lujuria: "lujuria.wav",
+      gula: "gula.wav",
+      avaricia: "avaricia.mp3",
+      ira: "ira.wav",
+      pereza: "pereza.wav",
+      violencia: "violencia.wav",
+      traicion: "traicion.wav"
+    };
   }
 
   /**
-   * Inicializa el AudioContext, la cadena de efectos y carga los archivos .wav de public/audio/
+   * Inicializa el AudioContext.
+   * Debe llamarse después de una interacción del usuario
+   * debido a las restricciones de los navegadores.
    */
   async init() {
-    if (this.initialized) return;
+    try {
+      if (!this.audioCtx) {
+        this.audioCtx = new (window.AudioContext ||
+          window.webkitAudioContext)();
 
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    this.audioCtx = new AudioContext();
-
-    if (this.audioCtx.state === 'suspended') {
-      await this.audioCtx.resume();
-    }
-
-    // Compresor maestro
-    this.compressor = this.audioCtx.createDynamicsCompressor();
-    this.compressor.threshold.setValueAtTime(-12, this.audioCtx.currentTime);
-    this.compressor.knee.setValueAtTime(6, this.audioCtx.currentTime);
-    this.compressor.ratio.setValueAtTime(5, this.audioCtx.currentTime);
-
-    // Filtro maestro
-    this.masterFilter = this.audioCtx.createBiquadFilter();
-    this.masterFilter.type = 'lowpass';
-    this.masterFilter.frequency.setValueAtTime(3200, this.audioCtx.currentTime);
-
-    // Ganancia Maestra
-    this.masterGain = this.audioCtx.createGain();
-    this.masterGain.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
-
-    this.masterFilter.connect(this.compressor);
-    this.compressor.connect(this.masterGain);
-    this.masterGain.connect(this.audioCtx.destination);
-
-    // Cargar archivos de audio
-    await this._loadCustomAudioFiles();
-
-    this.initialized = true;
-  }
-
-  /**
-   * Intenta cargar los 8 archivos de audio desde public/audio/
-   */
-  async _loadCustomAudioFiles() {
-    for (const item of this.soundFileMap) {
-      let loaded = false;
-      for (const fileName of item.files) {
-        // Usamos import.meta.env.BASE_URL (según vite.config.js -> base: './')
-        // en vez de una ruta absoluta '/audio/...', que se rompe cuando el sitio
-        // se sirve desde un subpath como https://usuario.github.io/repositorio/
-        const filePath = `${import.meta.env.BASE_URL}audio/${fileName}`;
-        try {
-          const res = await fetch(filePath);
-          if (res.ok) {
-            const arrayBuffer = await res.arrayBuffer();
-            const decoded = await this.audioCtx.decodeAudioData(arrayBuffer);
-            this.audioBuffers[item.id] = decoded;
-            console.log(`[AudioManager] Cargado correctamente: ${fileName} para ${item.name}`);
-            loaded = true;
-            break; // Archivo encontrado
-          }
-        } catch (err) {
-          // Continuar al siguiente posible nombre
-        }
+        this.masterGain = this.audioCtx.createGain();
+        this.masterGain.gain.value = 1.0;
+        this.masterGain.connect(this.audioCtx.destination);
       }
+
+      if (this.audioCtx.state === "suspended") {
+        await this.audioCtx.resume();
+      }
+
+      console.log(
+        "[AudioManager] AudioContext:",
+        this.audioCtx.state
+      );
+
+    } catch (error) {
+      console.error(
+        "[AudioManager] Error inicializando audio:",
+        error
+      );
     }
   }
 
   /**
-   * Dispara el audio del personaje ante eventos específicos de comportamiento
-   * @param {number} oscId 
-   * @param {string} eventName 
+   * Carga todos los audios.
    */
-  triggerCharacterEvent(oscId, eventName = 'EVENT') {
-    if (!this.initialized || this.isMuted) return;
-    if (this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
+  async loadAll() {
+    await this.init();
+
+    for (const [id, fileName] of Object.entries(this.audioFiles)) {
+      await this.loadAudio(id, fileName);
     }
 
-    const now = this.audioCtx.currentTime;
-    const lastTime = this.lastTriggerTimes[oscId] || 0;
-    if (now - lastTime < 0.25) return; // Evitar traslapes excesivos
-    this.lastTriggerTimes[oscId] = now;
+    console.log(
+      "[AudioManager] Todos los audios fueron procesados."
+    );
+  }
 
-    // Reproducir si existe muestra en buffer
-    if (this.audioBuffers[oscId]) {
-      const source = this.audioCtx.createBufferSource();
-      source.buffer = this.audioBuffers[oscId];
+  /**
+   * Carga un archivo de audio.
+   */
+  async loadAudio(id, fileName) {
+    // BASE_URL permite que funcione tanto localmente
+    // como en GitHub Pages.
+    const filePath =
+      `${import.meta.env.BASE_URL}audio/${fileName}`;
 
-      const gain = this.audioCtx.createGain();
-      gain.gain.setValueAtTime(0.7, now);
+    console.log(
+      `[AudioManager] Intentando cargar: ${filePath}`
+    );
 
-      source.connect(gain);
-      gain.connect(this.masterFilter);
-      source.start(now);
+    try {
+      const response = await fetch(filePath);
+
+      console.log(
+        `[AudioManager] Respuesta ${fileName}:`,
+        response.status,
+        response.url
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `HTTP ${response.status} - ${response.statusText}`
+        );
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+
+      const audioBuffer =
+        await this.audioCtx.decodeAudioData(arrayBuffer);
+
+      this.audioBuffers[id] = audioBuffer;
+
+      console.log(
+        `[AudioManager] ✓ Audio cargado correctamente: ${id}`
+      );
+
+      return true;
+
+    } catch (error) {
+      console.error(
+        `[AudioManager] ✗ Error cargando ${fileName}`,
+        error
+      );
+
+      return false;
+    }
+  }
+
+  /**
+   * Reproduce un audio.
+   *
+   * Ejemplo:
+   * audioManager.play("violencia");
+   */
+  play(id, options = {}) {
+    if (!this.audioCtx) {
+      console.warn(
+        "[AudioManager] El AudioContext no está inicializado."
+      );
       return;
     }
 
-    // Sintetizador de respaldo si no hay archivo en disco
-    this._playSynthFallback(oscId, 0.5, now, 0.5);
-  }
+    const buffer = this.audioBuffers[id];
 
-  /**
-   * Dispara audio por evento de cresta de oscilador
-   * @param {Object} osc 
-   * @param {number} orderR 
-   */
-  triggerNote(osc, orderR = 0) {
-    if (!this.initialized || this.isMuted || !osc.active) return;
-    this.triggerCharacterEvent(osc.id, 'PEAK');
-  }
+    if (!buffer) {
+      console.warn(
+        `[AudioManager] No existe un audio cargado para: ${id}`
+      );
+      return;
+    }
 
-  /**
-   * Sintetizador de respaldo cuando no se ha colocado archivo .wav en public/audio/
-   */
-  _playSynthFallback(oscId, normalizedTheta, now, R) {
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
+    try {
+      const source = this.audioCtx.createBufferSource();
+      const gainNode = this.audioCtx.createGain();
 
-    const freqs = [110, 220, 164.8, 329.63, 440, 130.81, 293.66, 523.25];
-    const freq = freqs[oscId] || 220;
+      source.buffer = buffer;
 
-    osc.type = oscId % 2 === 0 ? 'sawtooth' : 'sine';
-    osc.frequency.setValueAtTime(freq, now);
+      // Volumen
+      gainNode.gain.value =
+        options.volume !== undefined
+          ? options.volume
+          : 1.0;
 
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.22, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+      source.connect(gainNode);
+      gainNode.connect(this.masterGain);
 
-    osc.connect(gain);
-    gain.connect(this.masterFilter);
+      // Guardamos referencia al source
+      this.activeSources[id] = source;
 
-    osc.start(now);
-    osc.stop(now + 0.4);
-  }
+      // Cuando termina, eliminamos la referencia
+      source.onended = () => {
+        if (this.activeSources[id] === source) {
+          delete this.activeSources[id];
+        }
+      };
 
-  updateSystemAudioState(orderR) {
-    if (!this.initialized) return;
-    const now = this.audioCtx.currentTime;
-    const targetFreq = 1800 + orderR * 4200;
-    this.masterFilter.frequency.setTargetAtTime(targetFreq, now, 0.1);
-  }
+      // Comenzar desde una posición específica
+      const offset =
+        options.offset !== undefined
+          ? options.offset
+          : 0;
 
-  toggleMute() {
-    this.isMuted = !this.isMuted;
-    if (this.masterGain) {
-      this.masterGain.gain.setValueAtTime(
-        this.isMuted ? 0 : 0.5,
-        this.audioCtx ? this.audioCtx.currentTime : 0
+      source.start(0, offset);
+
+      console.log(
+        `[AudioManager] ▶ Reproduciendo: ${id}`
+      );
+
+      return source;
+
+    } catch (error) {
+      console.error(
+        `[AudioManager] Error reproduciendo ${id}:`,
+        error
       );
     }
-    return this.isMuted;
+  }
+
+  /**
+   * Detiene un audio específico.
+   */
+  stop(id) {
+    const source = this.activeSources[id];
+
+    if (source) {
+      try {
+        source.stop();
+      } catch (error) {
+        console.warn(
+          `[AudioManager] No se pudo detener ${id}:`,
+          error
+        );
+      }
+
+      delete this.activeSources[id];
+    }
+  }
+
+  /**
+   * Detiene todos los audios.
+   */
+  stopAll() {
+    Object.keys(this.activeSources).forEach((id) => {
+      this.stop(id);
+    });
+  }
+
+  /**
+   * Cambia el volumen general.
+   */
+  setMasterVolume(volume) {
+    if (!this.masterGain) return;
+
+    this.masterGain.gain.value = Math.max(
+      0,
+      Math.min(1, volume)
+    );
+  }
+
+  /**
+   * Comprueba si un audio está cargado.
+   */
+  isLoaded(id) {
+    return !!this.audioBuffers[id];
+  }
+
+  /**
+   * Devuelve los audios que ya fueron cargados.
+   */
+  getLoadedAudios() {
+    return Object.keys(this.audioBuffers);
   }
 }
