@@ -76,7 +76,10 @@ export class AudioManager {
     for (const item of this.soundFileMap) {
       let loaded = false;
       for (const fileName of item.files) {
-        const filePath = `/audio/${fileName}`;
+        // Usamos import.meta.env.BASE_URL (según vite.config.js -> base: './')
+        // en vez de una ruta absoluta '/audio/...', que se rompe cuando el sitio
+        // se sirve desde un subpath como https://usuario.github.io/repositorio/
+        const filePath = `${import.meta.env.BASE_URL}audio/${fileName}`;
         try {
           const res = await fetch(filePath);
           if (res.ok) {
