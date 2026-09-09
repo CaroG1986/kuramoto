@@ -23,11 +23,13 @@ export class Playground {
   /**
    * @param {THREE.Scene} scene
    * @param {import('../core/KuramotoSystem.js').KuramotoSystem} kuramotoSystem
+   * @param {import('../audio/AudioManager.js').AudioManager} [audioManager]
    */
-  constructor(scene, kuramotoSystem) {
+  constructor(scene, kuramotoSystem, audioManager = null) {
     this.scene = scene;
     this.kuramoto = kuramotoSystem;
-    
+    this.audioManager = audioManager;
+
     this.characters = [];
     this.reactiveLights = [];
 
@@ -41,87 +43,118 @@ export class Playground {
   }
 
   /**
-   * Configura la iluminación ambiental nocturna e infernal con luces neón reactivas
+   * Configura la iluminación nocturna perturbadora del patio infantil infernal.
+   * Paleta: rojo, violeta, naranja, magenta — sin cyan dominante.
    */
   _setupLighting() {
-    const ambient = new THREE.AmbientLight(0x120d20, 0.7);
+    // Luz ambiental muy tenue — casi negro — para sombras marcadas
+    const ambient = new THREE.AmbientLight(0x0a0308, 0.5);
     this.scene.add(ambient);
 
-    const hemiLight = new THREE.HemisphereLight(0x4a154b, 0x05070e, 0.6);
+    // Hemisférico: cielo violeta oscuro / suelo casi negro
+    const hemiLight = new THREE.HemisphereLight(0x2d0a3a, 0x030106, 0.7);
     hemiLight.position.set(0, 40, 0);
     this.scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xff007f, 1.2);
-    dirLight.position.set(12, 20, 10);
+    // Luz direccional principal — rojo sangre desde arriba-lateral
+    const dirLight = new THREE.DirectionalLight(0xcc0033, 1.6);
+    dirLight.position.set(10, 22, 8);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
     dirLight.shadow.bias = -0.0004;
     this.scene.add(dirLight);
 
-    const lightColors = [0xff007f, 0x00f3ff, 0x9d00ff, 0x39ff14];
+    // Segunda luz direccional — violeta/magenta desde el otro lado para sombras cruzadas
+    const dirLight2 = new THREE.DirectionalLight(0x8800cc, 0.8);
+    dirLight2.position.set(-8, 16, -6);
+    this.scene.add(dirLight2);
+
+    // 4 luces de punto en esquinas — paleta perturbadora: rojo, violeta, naranja, magenta
+    const lightColors = [0xff1a1a, 0x9900ff, 0xff6600, 0xdd0099];
     const lightRadius = 7.0;
 
     for (let i = 0; i < 4; i++) {
       const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      const pLight = new THREE.PointLight(lightColors[i], 2.8, 14);
-      pLight.position.set(Math.cos(angle) * lightRadius, 1.8, Math.sin(angle) * lightRadius);
+      const pLight = new THREE.PointLight(lightColors[i], 3.2, 16);
+      pLight.position.set(Math.cos(angle) * lightRadius, 2.0, Math.sin(angle) * lightRadius);
       this.scene.add(pLight);
       this.reactiveLights.push({ light: pLight, baseColor: new THREE.Color(lightColors[i]), angle });
     }
   }
 
   /**
-   * Construye la plataforma circular y los postes del patio de juegos infernal
+   * Construye la plataforma del patio de juegos:
+   * Suelo oscuro con marcas de pintura roja desgastada.
+   * Postes con esferas de color por oscilador.
+   * Anillo central perturbador en rojo oscuro.
    */
   _buildEnvironment() {
+    // Suelo: gris muy oscuro casi negro, rugoso como asfalto viejo
     const floorGeo = new THREE.CylinderGeometry(9.5, 9.5, 0.3, 64);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x07090e,
-      roughness: 0.4,
-      metalness: 0.7
+      color: 0x050307,
+      roughness: 0.85,
+      metalness: 0.1
     });
     const floorMesh = new THREE.Mesh(floorGeo, floorMat);
     floorMesh.position.y = -0.15;
     floorMesh.receiveShadow = true;
     this.scene.add(floorMesh);
 
-    const gridHelper = new THREE.GridHelper(19, 38, 0xff007f, 0x1a2130);
+    // Cuadrícula en rojo muy oscuro — como marcas viejas de pintura en un patio
+    const gridHelper = new THREE.GridHelper(19, 19, 0x330011, 0x1a000a);
     gridHelper.position.y = 0.01;
     this.scene.add(gridHelper);
 
-    const ringGeo = new THREE.RingGeometry(6.0, 6.18, 64);
+    // Anillo central — rojo sangre pulsante, como una marca ritual
+    const ringGeo = new THREE.RingGeometry(5.8, 6.1, 64);
     ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x00f3ff,
+      color: 0xaa0000,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.6
+      opacity: 0.5
     });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
     ringMesh.position.y = 0.02;
     this.scene.add(ringMesh);
+    this._ringMesh = ringMesh; // guardamos referencia para animar
 
-    const postGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.4, 12);
-    const postMat = new THREE.MeshStandardMaterial({ color: 0x121722, roughness: 0.3, metalness: 0.8 });
-    const capGeo = new THREE.SphereGeometry(0.14, 12, 12);
+    // Segundo anillo exterior — violeta muy tenue
+    const outerRingGeo = new THREE.RingGeometry(9.0, 9.15, 64);
+    outerRingGeo.rotateX(-Math.PI / 2);
+    const outerRingMat = new THREE.MeshBasicMaterial({
+      color: 0x440033,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.35
+    });
+    const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
+    outerRing.position.y = 0.015;
+    this.scene.add(outerRing);
+
+    // Postes perimetrales — negros metálicos con cápsula del color del oscilador
+    const postGeo = new THREE.CylinderGeometry(0.05, 0.07, 1.6, 12);
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x080508, roughness: 0.4, metalness: 0.9 });
+    const capGeo = new THREE.SphereGeometry(0.12, 12, 12);
 
     const postCount = 8;
     for (let i = 0; i < postCount; i++) {
       const angle = (i / postCount) * Math.PI * 2;
       const radius = 8.8;
       const post = new THREE.Mesh(postGeo, postMat);
-      post.position.set(Math.cos(angle) * radius, 0.7, Math.sin(angle) * radius);
+      post.position.set(Math.cos(angle) * radius, 0.8, Math.sin(angle) * radius);
       post.castShadow = true;
 
       const oscColor = this.kuramoto.oscillators[i].color;
       const capMat = new THREE.MeshStandardMaterial({
         color: oscColor,
         emissive: oscColor,
-        emissiveIntensity: 0.8
+        emissiveIntensity: 1.2
       });
       const cap = new THREE.Mesh(capGeo, capMat);
-      cap.position.y = 0.75;
+      cap.position.y = 0.82;
       post.add(cap);
 
       this.scene.add(post);
@@ -193,18 +226,20 @@ export class Playground {
   }
 
   /**
-   * Asigna e inicializa los 8 comportamientos conducidos por las fases de Kuramoto
+   * Asigna e inicializa los 8 comportamientos conducidos por las fases de Kuramoto.
+   * Los behaviors que disparan audio reciben el audioManager.
    */
   _initBehaviors() {
+    const am = this.audioManager;
     this.behaviors = {
       limbo: new LimboBehavior(this.characters[0], this.wheel),
       lust: new LustBehavior(this.characters[1], this.characters),
       gluttony: new GluttonyBehavior(this.characters[2], this.seesaw),
       greed: new GreedBehavior(this.characters[3], this.slide),
-      wrath: new WrathBehavior(this.characters[4], this.seesaw),
-      sloth: new SlothBehavior(this.characters[5], this.swing),
-      violence: new ViolenceBehavior(this.characters[6], this.characters[5], this.swing),
-      treachery: new TreacheryBehavior(this.characters[7], this.wheel)
+      wrath: new WrathBehavior(this.characters[4], this.seesaw, am),
+      sloth: new SlothBehavior(this.characters[5], this.swing, am),
+      violence: new ViolenceBehavior(this.characters[6], this.characters[5], this.swing, am),
+      treachery: new TreacheryBehavior(this.characters[7], this.wheel, am)
     };
 
     // Vincular comportamientos en los objetos osciladores
@@ -255,13 +290,18 @@ export class Playground {
 
     if (this.trails) this.trails.update(orderR);
 
-    // Modulación reactiva de luces neón
+    // Modulación reactiva de luces — paleta perturbadora
     const time = performance.now() * 0.002;
     this.reactiveLights.forEach((item, idx) => {
-      const pulseIncoherent = Math.sin(time * 3 + idx * 1.5);
-      const pulseCoherent = Math.sin(time * 4 + this.kuramoto.meanPhase);
+      const pulseIncoherent = Math.sin(time * 2.5 + idx * 1.8);
+      const pulseCoherent = Math.sin(time * 3.5 + this.kuramoto.meanPhase);
       const blendPulse = THREE.MathUtils.lerp(pulseIncoherent, pulseCoherent, orderR);
-      item.light.intensity = 2.2 + blendPulse * (1.2 + orderR * 1.6);
+      item.light.intensity = 2.8 + blendPulse * (1.4 + orderR * 2.0);
     });
+
+    // Animar el anillo central: pulsa levemente con R
+    if (this._ringMesh) {
+      this._ringMesh.material.opacity = 0.35 + orderR * 0.35 + Math.sin(time * 1.5) * 0.08;
+    }
   }
 }

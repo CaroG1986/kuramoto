@@ -15,8 +15,8 @@ function init() {
 
   // 1. Escena Three.js
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x07090e);
-  scene.fog = new THREE.FogExp2(0x07090e, 0.025);
+  scene.background = new THREE.Color(0x030206);
+  scene.fog = new THREE.FogExp2(0x030206, 0.032);
 
   // 2. Cámara
   const camera = new THREE.PerspectiveCamera(
@@ -45,7 +45,7 @@ function init() {
   const audioManager = new AudioManager();
 
   // 6. Instanciar Escenario 3D (Patio, 4 Sube y Bajas, 8 Muñequitos, Estelas)
-  const playground = new Playground(scene, kuramotoSystem);
+  const playground = new Playground(scene, kuramotoSystem, audioManager);
 
   // 7. Instanciar Gestor de Interacción (Raycasting 3D & OrbitControls)
   let controlPanel;

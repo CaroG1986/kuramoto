@@ -27,10 +27,10 @@ export class ControlPanel {
     this.startOverlay.className = 'start-overlay';
     this.startOverlay.innerHTML = `
       <div class="start-card">
-        <div class="start-badge">PATIO DE JUEGOS INFERNAL · KURAMOTO</div>
-        <h1>LOS 8 CÍRCULOS DEL INFIERNO</h1>
-        <p>Experiencia audiovisual performativa basada en el modelo dinámico de Kuramoto. Ocho personajes y sus osciladores emergen en sincronía sobre el patio.</p>
-        <button id="btn-start-exp" class="btn-primary">INGRESAR AL PATIO</button>
+        <div class="start-badge">KURAMOTO · LOS 8 CÍRCULOS</div>
+        <h1>EL PATIO</h1>
+        <p>Un patio de juegos aparentemente normal.<br>Ocho presencias. Ocho osciladores. Algo no está bien.</p>
+        <button id="btn-start-exp" class="btn-primary">ENTRAR AL PATIO</button>
       </div>
     `;
     document.body.appendChild(this.startOverlay);

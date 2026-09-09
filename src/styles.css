@@ -34,9 +34,9 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5, 7, 14, 0.92);
-  backdrop-filter: blur(18px);
-  transition: opacity 0.4s ease, visibility 0.4s ease;
+  background: rgba(2, 0, 4, 0.96);
+  backdrop-filter: blur(22px);
+  transition: opacity 0.5s ease, visibility 0.5s ease;
 }
 
 .start-overlay.fade-out {
@@ -47,11 +47,11 @@ canvas {
 .start-card {
   max-width: 460px;
   padding: 40px 36px;
-  background: rgba(16, 20, 32, 0.85);
-  border: 1px solid rgba(255, 0, 127, 0.3);
+  background: rgba(10, 3, 8, 0.92);
+  border: 1px solid rgba(180, 0, 60, 0.4);
   border-radius: 24px;
   text-align: center;
-  box-shadow: 0 0 40px rgba(255, 0, 127, 0.2), 0 20px 60px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 60px rgba(150, 0, 40, 0.35), 0 20px 60px rgba(0, 0, 0, 0.9);
 }
 
 .start-badge {
@@ -59,9 +59,9 @@ canvas {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.15em;
-  color: #00f3ff;
-  background: rgba(0, 243, 255, 0.12);
-  border: 1px solid rgba(0, 243, 255, 0.3);
+  color: #ff3366;
+  background: rgba(180, 0, 50, 0.18);
+  border: 1px solid rgba(200, 0, 60, 0.45);
   padding: 5px 12px;
   border-radius: 20px;
   margin-bottom: 18px;
@@ -72,7 +72,7 @@ canvas {
   font-weight: 700;
   margin-bottom: 12px;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #ffffff, #ff007f, #00f3ff);
+  background: linear-gradient(135deg, #ffffff 0%, #cc0033 50%, #8800cc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -89,19 +89,19 @@ canvas {
   padding: 15px 22px;
   font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #05070c;
-  background: linear-gradient(135deg, #ff007f, #00f3ff);
-  border: none;
+  letter-spacing: 0.12em;
+  color: #fff0f0;
+  background: linear-gradient(135deg, #880022, #440088);
+  border: 1px solid rgba(200, 0, 60, 0.5);
   border-radius: 14px;
   cursor: pointer;
-  box-shadow: 0 6px 25px rgba(255, 0, 127, 0.45);
+  box-shadow: 0 6px 30px rgba(150, 0, 40, 0.55);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 32px rgba(0, 243, 255, 0.6);
+  box-shadow: 0 12px 36px rgba(180, 0, 80, 0.7);
 }
 
 /* ==========================================================================
@@ -138,7 +138,7 @@ canvas {
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  background: linear-gradient(90deg, #ff007f, #00f3ff);
+  background: linear-gradient(90deg, #cc0033, #8800cc);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -187,7 +187,7 @@ canvas {
 
 .sync-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff007f, #ffe600, #39ff14);
+  background: linear-gradient(90deg, #880022, #cc0066, #ff6600);
   transition: width 0.1s linear;
 }
 
