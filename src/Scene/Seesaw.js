@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Character } from './Character.js';
 
 /**
- * Representa un Sube y Baja 3D articulado de estilo synth-pop / instalación de arte digital.
+ * Representa un Sube y Baja 3D articulado del patio infernal.
  */
 export class Seesaw {
   /**
@@ -21,6 +21,10 @@ export class Seesaw {
 
     this.armLength = 1.65;
     this.maxTiltAngle = Math.PI / 11; // ~16 grados de inclinación máxima
+
+    // Referencias opcionales a los comportamientos que aportan peso/impacto real (ver setWeightBehaviors)
+    this.gluttonyBehavior = null;
+    this.wrathBehavior = null;
 
     // Crear Personajes estilizados
     this.characterA = new Character({ oscillator: oscA, color: oscA.color });
@@ -132,21 +136,47 @@ export class Seesaw {
   }
 
   /**
-   * Actualiza la inclinación de la tabla y los personajes según las fases de Kuramoto
+   * Vincula los comportamientos de Gula e Ira para que la inclinación pueda usar
+   * getEffectiveWeightForce() / getDownwardImpactForce() en lugar de solo las fases.
+   * @param {import('../behaviors/GluttonyBehavior.js').GluttonyBehavior} gluttonyBehavior
+   * @param {import('../behaviors/WrathBehavior.js').WrathBehavior} wrathBehavior
+   */
+  setWeightBehaviors(gluttonyBehavior, wrathBehavior) {
+    this.gluttonyBehavior = gluttonyBehavior;
+    this.wrathBehavior = wrathBehavior;
+  }
+
+  /**
+   * Actualiza la inclinación de la tabla.
+   * Nota: la animación individual de los personajes (characterA/B) la actualiza
+   * Playground.update() en su loop general sobre this.characters, para no duplicarla aquí.
    */
   update() {
     const thetaA = this.characterA.oscillator.theta;
     const thetaB = this.characterB.oscillator.theta;
 
-    // Actualizar micro-animaciones y salto reactivo individual de los personajes
-    this.characterA.update(thetaA);
-    this.characterB.update(thetaB);
-
     const sinA = Math.sin(thetaA);
     const sinB = Math.sin(thetaB);
 
-    // Ángulo basculante de la tabla
-    const tilt = ((sinB - sinA) / 2) * this.maxTiltAngle;
-    this.plankGroup.rotation.z = THREE.MathUtils.lerp(this.plankGroup.rotation.z, tilt, 0.2);
+    // Intento de movimiento puro según Kuramoto (como antes)
+    const phaseTilt = ((sinB - sinA) / 2) * this.maxTiltAngle;
+
+    let targetTilt = phaseTilt;
+
+    if (this.gluttonyBehavior && this.wrathBehavior) {
+      const gWeight = this.gluttonyBehavior.getEffectiveWeightForce();
+      const wForce = this.wrathBehavior.getDownwardImpactForce();
+
+      // characterA (Gula) está en x NEGATIVO del plankGroup. Con rotation.z POSITIVO,
+      // un punto en x negativo baja (y un punto en x positivo, donde está characterB/Ira, sube).
+      // Por eso el signo debe ser POSITIVO cuando el peso de Gula domina (gWeight > wForce).
+      const weightTilt = this.maxTiltAngle * (gWeight - wForce) / 3.5;
+
+      // El peso de Gula domina el equilibrio; la fase aporta variación orgánica menor
+      targetTilt = weightTilt * 0.85 + phaseTilt * 0.15;
+      targetTilt = THREE.MathUtils.clamp(targetTilt, -this.maxTiltAngle, this.maxTiltAngle);
+    }
+
+    this.plankGroup.rotation.z = THREE.MathUtils.lerp(this.plankGroup.rotation.z, targetTilt, 0.15);
   }
 }

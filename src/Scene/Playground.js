@@ -17,7 +17,8 @@ import { ViolenceBehavior } from '../behaviors/ViolenceBehavior.js';
 import { TreacheryBehavior } from '../behaviors/TreacheryBehavior.js';
 
 /**
- * Escenario 3D del Patio de Juegos Infernal Synth-Pop / Instalación Audiovisual Nocturna.
+ * Escenario 3D del Patio de Juegos Infernal: un parque infantil abandonado
+ * y perturbador, iluminado en rojos y sombras profundas (sin estética synth-pop).
  */
 export class Playground {
   /**
@@ -70,8 +71,9 @@ export class Playground {
     dirLight2.position.set(-8, 16, -6);
     this.scene.add(dirLight2);
 
-    // 4 luces de punto en esquinas — paleta perturbadora: rojo, violeta, naranja, magenta
-    const lightColors = [0xff1a1a, 0x9900ff, 0xff6600, 0xdd0099];
+    // 4 luces de punto en esquinas — paleta infernal: predominantemente rojo/naranja,
+    // con un único acento violeta oscuro (sin cyan, magenta, azul, amarillo ni verde)
+    const lightColors = [0xff1a1a, 0x8800cc, 0xff6600, 0xaa0011];
     const lightRadius = 7.0;
 
     for (let i = 0; i < 4; i++) {
@@ -90,20 +92,22 @@ export class Playground {
    * Anillo central perturbador en rojo oscuro.
    */
   _buildEnvironment() {
-    // Suelo: gris muy oscuro casi negro, rugoso como asfalto viejo
+    // Suelo: rojo oscuro / carmesí, con un ligero brillo desde abajo (no neón)
     const floorGeo = new THREE.CylinderGeometry(9.5, 9.5, 0.3, 64);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x050307,
-      roughness: 0.85,
-      metalness: 0.1
+      color: 0x3a0709,
+      roughness: 0.82,
+      metalness: 0.1,
+      emissive: 0x2a0304,
+      emissiveIntensity: 0.35
     });
     const floorMesh = new THREE.Mesh(floorGeo, floorMat);
     floorMesh.position.y = -0.15;
     floorMesh.receiveShadow = true;
     this.scene.add(floorMesh);
 
-    // Cuadrícula en rojo muy oscuro — como marcas viejas de pintura en un patio
-    const gridHelper = new THREE.GridHelper(19, 19, 0x330011, 0x1a000a);
+    // Cuadrícula tipo grietas en rojo brillante, como energía asomando desde debajo del suelo
+    const gridHelper = new THREE.GridHelper(19, 19, 0xff2200, 0x7a0d0d);
     gridHelper.position.y = 0.01;
     this.scene.add(gridHelper);
 
@@ -180,8 +184,11 @@ export class Playground {
       oscA: oscs[2],
       oscB: oscs[4]
     });
-    this.seesaw.characterA = this.characters[2];
-    this.seesaw.characterB = this.characters[4];
+    // Reutilizar las instancias de personaje que Seesaw ya montó y añadió a la escena
+    // (antes se sobrescribían con duplicados huérfanos nunca añadidos al plankGroup,
+    // por lo que Gula e Ira quedaban congelados sin animación).
+    this.characters[2] = this.seesaw.characterA;
+    this.characters[4] = this.seesaw.characterB;
     this.scene.add(this.seesaw.group);
 
     // 2. Columpio (Pereza: oscs[5], Violencia: oscs[6])
@@ -242,6 +249,10 @@ export class Playground {
       treachery: new TreacheryBehavior(this.characters[7], this.wheel, am)
     };
 
+    // Conectar el Seesaw con los comportamientos de Gula/Ira para que la inclinación
+    // pueda usar getEffectiveWeightForce() / getDownwardImpactForce() (ver Seesaw.update()).
+    this.seesaw.setWeightBehaviors(this.behaviors.gluttony, this.behaviors.wrath);
+
     // Vincular comportamientos en los objetos osciladores
     this.kuramoto.oscillators[0].behavior = this.behaviors.limbo;
     this.kuramoto.oscillators[1].behavior = this.behaviors.lust;
@@ -271,17 +282,9 @@ export class Playground {
     if (this.behaviors.violence) this.behaviors.violence.update(oscs[6].theta);
     if (this.behaviors.treachery) this.behaviors.treachery.update(oscs[7].theta, dt);
 
-    // =========================================================================
-    // ETAPA 5: INTERACCIÓN DE COMPORTAMIENTO COLECTIVO GULA ↔ IRA EN EL SUBE Y BAJA
-    // =========================================================================
-    if (this.seesaw) {
-      const gWeight = this.behaviors.gluttony ? this.behaviors.gluttony.getEffectiveWeightForce() : 3.0;
-      const wForce = this.behaviors.wrath ? this.behaviors.wrath.getDownwardImpactForce() : 0;
-
-      // Inclinación dinámica resultante: Gula (lado A) pesa más, pero los saltos de Ira (lado B) intentan moverlo
-      const netTilt = Math.PI / 12 * (gWeight - wForce) / 3.5;
-      this.seesaw.plankGroup.rotation.z = THREE.MathUtils.lerp(this.seesaw.plankGroup.rotation.z, -netTilt, 0.15);
-    }
+    // Inclinación del sube y baja: combina fase de Kuramoto + peso efectivo de Gula
+    // (ver Seesaw.update() para el cálculo y la corrección del signo).
+    if (this.seesaw) this.seesaw.update();
 
     // Actualizar animaciones base de personajes y estelas
     this.characters.forEach((char) => {
